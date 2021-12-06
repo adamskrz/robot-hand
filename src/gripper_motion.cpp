@@ -76,7 +76,14 @@ unsigned long calibrate_gripper()
 
 void closeGripper()
 {
-    setGripperMotor(grip_direction, closingSpeed);
+    setGripperMotor(CLOSE, closingSpeed);
+}
+
+void openGripper()
+{
+    setGripperMotor(OPEN, 255);
+    delay(1000);
+    setGripperMotor(CLOSE, 0);
 }
 
 void stopGripper()

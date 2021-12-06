@@ -1,13 +1,18 @@
 #include "display_loop.h"
 #include "distance_loop.h"
 #include "gripper_motion.h"
+#include "servo_helper.h"
 #include <Arduino.h>
 #include <Ultrasonic.h>
-#include "servo_helper.h"
+#include "InputDebounce.h"
+
+#define BUTTON_DEBOUNCE_DELAY 20 // [ms]
 
 const int trigPin = 3; // Trigger Pin of Ultrasonic Sensor
-const int echoPin = 2; // Echo Pin of Ultrasonic Sensor
+const int echoPin = 4; // Echo Pin of Ultrasonic Sensor
+const int disablePin = 2; // Disable Pin for gripper function
 
+static InputDebounce button;
 
 unsigned long position_countdown_start = 0;
 unsigned long countdown_val;
@@ -20,9 +25,21 @@ double gripWidth;
 int distance_cm;
 char displayBuffer[64];
 char floatBuffer[5];
+bool gripper_disabled = false;
+
+const int display_delay = 200;
 
 // Initializing Ultrasonic Sensor library with pins and maximum 89cm distance timeout
 Ultrasonic ultrasonic(trigPin, echoPin, 5000UL);
+
+void voidfunction(uint8_t pinIn) { }
+
+void switchDisable(uint8_t pinIn)
+{
+    Serial.println("Interrupt called");
+    gripper_disabled = !gripper_disabled;
+    position_countdown_start = 0;
+}
 
 void setup()
 {
@@ -32,6 +49,9 @@ void setup()
     calibratedClosingTime = calibrate_gripper();
     Serial.print("closing time: ");
     Serial.println(calibratedClosingTime);
+    pinMode(disablePin, INPUT_PULLUP);
+    button.registerCallbacks(switchDisable, voidfunction);
+    button.setup(disablePin, BUTTON_DEBOUNCE_DELAY, InputDebounce::PIM_INT_PULL_UP_RES);
 }
 
 void loop()
@@ -40,26 +60,42 @@ void loop()
     // getButtonStatus(displayBuffer);
     // displayText(displayBuffer, 200);
 
-    if (gripper_open) {
+    button.process(millis());
+
+    if (gripper_disabled) {
+        // Deal with interrupt - open gripper if closed/closing
+        snprintf(displayBuffer, sizeof(displayBuffer), "GRIPPER DISABLED");
+        displayText(displayBuffer, display_delay);
+        
+        if (!gripper_open) {
+            openGripper();
+            gripper_open = true;
+            gripper_closing = false;
+        }
+
+    } else if (gripper_open) {
+        // If not gripping, check the distance from object
+
         distance_cm = measureDistance(&ultrasonic, 100);
 
         if (distance_cm > 70) {
             // if over 70, display "Object out of range - please move closer"
             position_countdown_start = 0;
             snprintf(displayBuffer, sizeof(displayBuffer), "Object out of range - please move closer");
-            displayText(displayBuffer, 200);
+            displayText(displayBuffer, display_delay);
         } else if (distance_cm > 20) {
             // if over 20, display "xcm - place object in gripper"
             position_countdown_start = 0;
 
             snprintf(displayBuffer, sizeof(displayBuffer), "%dcm - place object in gripper", distance_cm);
-            displayText(displayBuffer, 200);
+            displayText(displayBuffer, display_delay);
         } else {
 
             // start timer
             countdown_val = millis() - position_countdown_start;
-            // snprintf(displayBuffer, sizeof(displayBuffer), "Current timer - %lu", countdown_val);
-            // displayText(displayBuffer, 200);
+
+            snprintf(displayBuffer, sizeof(displayBuffer), "Current timer - %lu", countdown_val);
+            displayText(displayBuffer, 200);
 
             if (position_countdown_start == 0) {
                 position_countdown_start = millis();
@@ -70,12 +106,12 @@ void loop()
                 dtostrf(displayTime, 2, 1, floatBuffer);
                 strcat(displayBuffer, floatBuffer);
                 strcat(displayBuffer, " sec");
-                displayText(displayBuffer, 100);
+                displayText(displayBuffer, display_delay);
 
             } else {
                 // display "Gripping"
                 snprintf(displayBuffer, sizeof(displayBuffer), "Gripping");
-                displayText(displayBuffer, 200);
+                displayText(displayBuffer, display_delay);
 
                 gripper_open = false;
                 gripCloseStart = millis();
@@ -89,12 +125,12 @@ void loop()
         dtostrf(gripWidth, 4, 2, floatBuffer);
 
         if (!gripperHolding() && currentClosingTime < (calibratedClosingTime + 500)) {
-            
+
             strcpy(displayBuffer, "Closing grip - ");
             strcat(displayBuffer, floatBuffer);
             strcat(displayBuffer, "mm");
 
-            displayText(displayBuffer, 200);
+            displayText(displayBuffer, display_delay);
 
         } else {
             // Display "Gripper closed"
@@ -107,6 +143,9 @@ void loop()
         }
     } else {
         // Display "Gripper holding"
-        displayText(displayBuffer, 200);
+        // strcpy(displayBuffer, "Not disabled, open, or closing - probably holding");
+        displayText(displayBuffer, display_delay);
     }
+
+    delay(1);
 }

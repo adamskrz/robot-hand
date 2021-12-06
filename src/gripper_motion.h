@@ -14,5 +14,6 @@ void stopGripper();
 
 unsigned long calibrate_gripper();
 void closeGripper();
+void openGripper();
 
 double gripper_width(unsigned long currentTime, unsigned long fullTime = 0);
