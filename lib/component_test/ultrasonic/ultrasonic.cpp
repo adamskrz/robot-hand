@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-const int pingPin = 3; // Trigger Pin of Ultrasonic Sensor
+const int trigPin = 3; // Trigger Pin of Ultrasonic Sensor
 const int echoPin = 2; // Echo Pin of Ultrasonic Sensor
 
 void setup() {
@@ -9,12 +9,12 @@ void setup() {
 
 void loop() {
    long duration, inches, cm;
-   pinMode(pingPin, OUTPUT);
-   digitalWrite(pingPin, LOW);
+   pinMode(trigPin, OUTPUT);
+   digitalWrite(trigPin, LOW);
    delayMicroseconds(2);
-   digitalWrite(pingPin, HIGH);
+   digitalWrite(trigPin, HIGH);
    delayMicroseconds(10);
-   digitalWrite(pingPin, LOW);
+   digitalWrite(trigPin, LOW);
    pinMode(echoPin, INPUT);
    duration = pulseIn(echoPin, HIGH);
    inches = microsecondsToInches(duration);

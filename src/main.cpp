@@ -3,9 +3,12 @@
 #include "gripper_motion.h"
 #include <Arduino.h>
 #include <Ultrasonic.h>
+#include "servo_helper.h"
 
-const int pingPin = 3; // Trigger Pin of Ultrasonic Sensor
+const int trigPin = 3; // Trigger Pin of Ultrasonic Sensor
 const int echoPin = 2; // Echo Pin of Ultrasonic Sensor
+
+
 unsigned long position_countdown_start = 0;
 unsigned long countdown_val;
 unsigned long gripCloseStart;
@@ -19,11 +22,12 @@ char displayBuffer[64];
 char floatBuffer[5];
 
 // Initializing Ultrasonic Sensor library with pins and maximum 89cm distance timeout
-Ultrasonic ultrasonic(pingPin, echoPin, 5000UL);
+Ultrasonic ultrasonic(trigPin, echoPin, 5000UL);
 
 void setup()
 {
     Serial.begin(9600); // Starting Serial Terminal
+    servo_setup();
     gripper_setup();
     calibratedClosingTime = calibrate_gripper();
     Serial.print("closing time: ");
@@ -33,6 +37,9 @@ void setup()
 void loop()
 {
     // Serial.println("Start of loop");
+    // getButtonStatus(displayBuffer);
+    // displayText(displayBuffer, 200);
+
     if (gripper_open) {
         distance_cm = measureDistance(&ultrasonic, 100);
 
