@@ -6,8 +6,8 @@
 #define OPEN false
 #define CLOSE true
 
-const int pwm = 9; // digital pin 3 will be used for PWM (Pulse Width Modulation) output
-const int dir = 8; // digital pin 8 will be used for high/low output
+const int pwm = 6; // digital pin 9 will be used for PWM (Pulse Width Modulation) output
+const int dir = 7; // digital pin 8 will be used for high/low output
 const int forcePin = A0; // analogue pin A0 will be used to read the voltage from the force sensor
 const int ledPin = 13; // digital pin 13 is also wired to a built-in LED
 int forceValue = 0; // value read from force pin
@@ -44,9 +44,9 @@ bool gripperHolding()
 void setGripperMotor(bool closing_dir, uint8_t speed = closingSpeed)
 {
     if (closing_dir != grip_direction) {
-        analogWrite(pwm, 0);
+        analogWrite(pwm, 0); // stop motor
         delay(50); // delay is in milliseconds
-        digitalWrite(dir, closing_dir);
+        digitalWrite(dir, closing_dir); // set direction
         grip_direction = closing_dir;
     }
     analogWrite(pwm, speed);

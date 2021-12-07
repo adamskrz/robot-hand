@@ -1,10 +1,11 @@
+
 #include "display_loop.h"
 #include "distance_loop.h"
 #include "gripper_motion.h"
 #include "servo_helper.h"
 #include <Arduino.h>
 #include <Ultrasonic.h>
-#include "InputDebounce.h"
+#include <InputDebounce.h>
 
 #define BUTTON_DEBOUNCE_DELAY 20 // [ms]
 
@@ -60,13 +61,16 @@ void loop()
     // getButtonStatus(displayBuffer);
     // displayText(displayBuffer, 200);
 
+    // Check if disable button is pressed
     button.process(millis());
+    
 
     if (gripper_disabled) {
+
         // Deal with interrupt - open gripper if closed/closing
         snprintf(displayBuffer, sizeof(displayBuffer), "GRIPPER DISABLED");
         displayText(displayBuffer, display_delay);
-        
+
         if (!gripper_open) {
             openGripper();
             gripper_open = true;
@@ -74,23 +78,30 @@ void loop()
         }
 
     } else if (gripper_open) {
-        // If not gripping, check the distance from object
 
+        // If not gripping, check the distance from object
         distance_cm = measureDistance(&ultrasonic, 100);
 
-        if (distance_cm > 70) {
-            // if over 70, display "Object out of range - please move closer"
-            position_countdown_start = 0;
-            snprintf(displayBuffer, sizeof(displayBuffer), "Object out of range - please move closer");
-            displayText(displayBuffer, display_delay);
-        } else if (distance_cm > 20) {
-            // if over 20, display "xcm - place object in gripper"
-            position_countdown_start = 0;
+        if (distance_cm > 20) {
 
-            snprintf(displayBuffer, sizeof(displayBuffer), "%dcm - place object in gripper", distance_cm);
+            // if over 20, reset countdown
+            position_countdown_start = 0;
+            
+            rotateServo();
+
+            if (distance_cm > 70) {
+                // if over 70, print "object out of range"
+                snprintf(displayBuffer, sizeof(displayBuffer), "Object out of range - please move closer");
+            } else {
+                // if under 70, print distance
+                snprintf(displayBuffer, sizeof(displayBuffer), "%dcm - place object in gripper", distance_cm);
+            }
+
             displayText(displayBuffer, display_delay);
+            
         } else {
 
+            // If object in gripping area, start countdown
             // start timer
             countdown_val = millis() - position_countdown_start;
 
@@ -109,6 +120,7 @@ void loop()
                 displayText(displayBuffer, display_delay);
 
             } else {
+                // if countdown is over, start closing
                 // display "Gripping"
                 snprintf(displayBuffer, sizeof(displayBuffer), "Gripping");
                 displayText(displayBuffer, display_delay);
@@ -120,6 +132,7 @@ void loop()
             }
         }
     } else if (gripper_closing) {
+        // check closing status
         currentClosingTime = millis() - gripCloseStart;
         gripWidth = gripper_width(currentClosingTime, calibratedClosingTime);
         dtostrf(gripWidth, 4, 2, floatBuffer);
@@ -133,7 +146,7 @@ void loop()
             displayText(displayBuffer, display_delay);
 
         } else {
-            // Display "Gripper closed"
+            // if closed, display "Gripper closed"
             // print grip width
             stopGripper();
             gripper_closing = false;
