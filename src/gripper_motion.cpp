@@ -33,12 +33,12 @@ int getForce()
 
 bool gripperClosed()
 {
-    return getForce() > 700;
+    return getForce() > 855;
 }
 
 bool gripperHolding()
 {
-    return getForce() > 300;
+    return getForce() > 830;
 }
 
 void setGripperMotor(bool closing_dir, uint8_t speed = closingSpeed)
