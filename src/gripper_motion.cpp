@@ -33,12 +33,12 @@ int getForce()
 
 bool gripperClosed()
 {
-    return getForce() > 855;
+    return getForce() > 600;
 }
 
 bool gripperHolding()
 {
-    return getForce() > 830;
+    return getForce() > 400;
 }
 
 void setGripperMotor(bool closing_dir, uint8_t speed = closingSpeed)
@@ -65,6 +65,7 @@ unsigned long calibrate_gripper()
             forceValue=0;
         }
         snprintf(gripperDisplayBuffer, sizeof(gripperDisplayBuffer), "Waiting for gripper to close - current force: %d", forceValue);
+        // Serial.println(gripperDisplayBuffer);
         displayText(gripperDisplayBuffer, 20);
     }
     unsigned long closingTime = millis() - startTime;

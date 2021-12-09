@@ -45,14 +45,17 @@ void switchDisable(uint8_t pinIn)
 void setup()
 {
     Serial.begin(9600); // Starting Serial Terminal
-    servo_setup();
-    gripper_setup();
-    calibratedClosingTime = calibrate_gripper();
-    Serial.print("closing time: ");
-    Serial.println(calibratedClosingTime);
     pinMode(disablePin, INPUT_PULLUP);
     button.registerCallbacks(switchDisable, voidfunction);
     button.setup(disablePin, BUTTON_DEBOUNCE_DELAY, InputDebounce::PIM_INT_PULL_UP_RES);
+    // display_setup();
+    servo_setup();
+    gripper_setup();
+    Serial.print("calibrating: ");
+    calibratedClosingTime = calibrate_gripper();
+    Serial.print("closing time: ");
+    Serial.println(calibratedClosingTime);
+    
 }
 
 void loop()
